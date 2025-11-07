@@ -43,7 +43,6 @@ export class Analysis {
 
                 const count = map.get(title)!;
                 count.users.push(`${user.name} (${user.id})`);
-                map.set(title, count);
             }
         }
 
@@ -76,5 +75,14 @@ export class Analysis {
     }
 }
 
-const a = new Analysis();
-await a.run()
+// Allow running directly (check if this file is the entry point)
+import { fileURLToPath } from 'url';
+import { resolve } from 'path';
+
+const isMainModule = process.argv[1] &&
+    fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+
+if (isMainModule) {
+    const a = new Analysis();
+    await a.run();
+}

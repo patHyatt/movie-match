@@ -23,7 +23,7 @@ export class UserRepository {
 
     async getAll(): Promise<User[]> {
         const db = await this.getDb();
-        return db.data.users;
+        return [...db.data.users];
     }
 
     async findById(id: string): Promise<User | undefined> {
