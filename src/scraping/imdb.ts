@@ -1,19 +1,27 @@
-import puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
+import { readFile } from 'fs/promises';
+import puppeteer from 'puppeteer';
 
-import { JSONFilePreset } from 'lowdb/node';
-import { User } from '../models';
+import { UserRepository } from '../repositories/user-repository.js';
 
-const defaultData: { users: User[] } = { users: [] };
-const db = await JSONFilePreset('db.json', defaultData);
-const { users } = db.data;
+const userRepository = new UserRepository();
 
+// Load IMDB user IDs from config file
+let ids: string[];
+try {
+    const configFile = await readFile('config.json', 'utf-8');
+    const config = JSON.parse(configFile);
+    ids = config.scraping?.imdb?.ids || [];
 
-const ids = [
-    'ur117462831',
-    'ur22654354',
-    'ur27661388'
-]
+    if (ids.length === 0) {
+        console.error('No IMDB user IDs found in config.json');
+        process.exit(1);
+    }
+} catch (error) {
+    console.error('Error loading config.json:', error);
+    console.error('Please create a config.json file with the format: { "scraping": { "imdb": { "ids": ["ur123...", "ur456..."] } } }');
+    process.exit(1);
+}
 
 // Launch the browser and open a new blank page
 const browser = await puppeteer.launch(
@@ -33,11 +41,10 @@ for (const id of ids) {
     const content = await page.content();
     const $ = cheerio.load(content);
 
-    let current = users.find((user) => user.id === id);
+    let current = await userRepository.findById(id);
     if (!current) {
         const name = $('a[data-testid="list-author-link"]').first().text() || '(Anonymous)';
-        await db.update(({ users }) => users.push({ id: id, name: name, watchlist: [] }));
-        current = users.find((user) => user.id === id);
+        current = await userRepository.create({ id: id, name: name, watchlist: [] });
     }
 
     console.log('id:', id);
@@ -51,9 +58,9 @@ for (const id of ids) {
             console.log(title)
         });
 
-    current!.watchlist = watchlist;
+    await userRepository.updateWatchlist(id, watchlist);
 }
 
-await db.write();
+await userRepository.save();
 
 await browser.close();

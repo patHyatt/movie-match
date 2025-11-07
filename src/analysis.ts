@@ -1,20 +1,22 @@
-import { JSONFilePreset } from 'lowdb/node';
 import { TopMovieHeap } from './heap.js';
-import { MovieCount, User } from './models';
+import { MovieCount } from './models.js';
+import { UserRepository } from './repositories/user-repository.js';
 
 export class Analysis {
-    async run() {
-        const defaultData: { users: User[] } = { users: [] };
+    private userRepository: UserRepository;
 
-        let db;
+    constructor(userRepository?: UserRepository) {
+        this.userRepository = userRepository || new UserRepository();
+    }
+
+    async run() {
+        let users;
         try {
-            db = await JSONFilePreset('db.json', defaultData);
+            users = await this.userRepository.getAll();
         } catch (error) {
             console.error('Error loading database:', error);
             throw new Error('Failed to load database. Please ensure db.json exists and is readable.');
         }
-
-        const { users } = db.data;
 
         if (!users || users.length === 0) {
             console.log('No users found in database. Please run the scraper first.');
@@ -68,9 +70,8 @@ export class Analysis {
             if (count.users.length === totalUsers)
                 output = "*UNANIMOUS* " + count.title;
 
+            output += ` Wanted by ${count.users.length} people`;
             console.log(output);
-            console.log(`Wanted by ${count.users.length} people`);
-            console.log('');
         }
     }
 }

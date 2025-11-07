@@ -137,3 +137,4 @@ dist
 
 # specific to this repository
 db.json
+config.json
