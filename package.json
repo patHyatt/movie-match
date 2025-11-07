@@ -1,0 +1,22 @@
+{
+  "name": "movie-match",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsc && node --test dist/test/**/*.test.js",
+    "scrape": "tsc && node dist/scraping/imdb.js",
+    "analyze": "tsc && node dist/analysis.js"
+  },
+  "type": "module",
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "lowdb": "^7.0.1",
+    "puppeteer": "^23.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
