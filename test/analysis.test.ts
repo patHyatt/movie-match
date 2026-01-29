@@ -3,6 +3,8 @@ import assert from 'node:assert';
 import { Analysis } from '../src/analysis.js';
 import { UserRepository } from '../src/repositories/user-repository.js';
 import { User } from '../src/models.js';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 // Mock UserRepository for testing error scenarios
 class MockUserRepository extends UserRepository {
@@ -10,7 +12,7 @@ class MockUserRepository extends UserRepository {
     private shouldThrowError: boolean;
 
     constructor(users: User[] | null = null, shouldThrowError = false) {
-        super('/tmp/mock-db.json');
+        super(join(tmpdir(), 'mock-db.json'));
         this.mockUsers = users;
         this.shouldThrowError = shouldThrowError;
     }

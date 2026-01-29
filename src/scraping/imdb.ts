@@ -36,8 +36,10 @@ export async function runScraper(): Promise<void> {
 
     const page = await browser.newPage();
     
+    const failedUsers: string[] = [];
+    
     try {
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299');
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
 
         for (const id of ids) {
             try {
@@ -83,17 +85,12 @@ export async function runScraper(): Promise<void> {
                     }
                 });
 
-                try {
-                    await userRepository.updateWatchlist(id, watchlist);
-                    console.log(`Successfully scraped ${watchlist.length} movies for user ${id}`);
-                } catch (error) {
-                    console.error(`Error updating watchlist for user ${id}:`, error);
-                    throw error;
-                }
+                await userRepository.updateWatchlist(id, watchlist);
+                console.log(`Successfully scraped ${watchlist.length} movies for user ${id}`);
             } catch (error) {
                 console.error(`Error scraping user ${id}:`, error);
+                failedUsers.push(id);
                 // Continue with next user instead of failing completely
-                continue;
             }
         }
 
@@ -104,12 +101,18 @@ export async function runScraper(): Promise<void> {
             console.error('Error saving database:', error);
             throw error;
         }
+
+        if (failedUsers.length > 0) {
+            console.warn(`\nWarning: Failed to scrape ${failedUsers.length} user(s): ${failedUsers.join(', ')}`);
+        }
     } finally {
         // Always attempt to close the browser
-        try {
-            await browser.close();
-        } catch (error) {
-            console.error('Error closing browser:', error);
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (error) {
+                console.error('Error closing browser:', error);
+            }
         }
     }
 }

@@ -37,7 +37,8 @@ export class UserRepository {
             await db.update(({ users }) => users.push(user));
             return user;
         } catch (error) {
-            throw new Error(`Failed to create user ${user.id}: ${error}`);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to create user ${user.id}: ${errorMsg}`);
         }
     }
 
@@ -54,7 +55,8 @@ export class UserRepository {
             await db.write();
             return user;
         } catch (error) {
-            throw new Error(`Failed to update user ${id}: ${error}`);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to update user ${id}: ${errorMsg}`);
         }
     }
 
@@ -75,7 +77,8 @@ export class UserRepository {
             await db.write();
             return true;
         } catch (error) {
-            throw new Error(`Failed to delete user ${id}: ${error}`);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to delete user ${id}: ${errorMsg}`);
         }
     }
 
@@ -84,7 +87,8 @@ export class UserRepository {
         try {
             await db.write();
         } catch (error) {
-            throw new Error(`Failed to save database: ${error}`);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to save database: ${errorMsg}`);
         }
     }
 }

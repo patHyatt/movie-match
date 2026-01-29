@@ -4,9 +4,11 @@ import { UserRepository } from '../src/repositories/user-repository.js';
 import { User } from '../src/models.js';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 describe('UserRepository Error Handling', () => {
-    const testDbPath = '/tmp/test-error-db.json';
+    const testDbPath = join(tmpdir(), 'test-error-db.json');
     let repo: UserRepository;
 
     beforeEach(() => {
