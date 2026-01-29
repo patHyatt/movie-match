@@ -38,10 +38,11 @@ export class Analysis {
                     continue;
                 }
 
-                if (!map.has(title))
-                    map.set(title, { title, users: [] });
-
-                const count = map.get(title)!;
+                let count = map.get(title);
+                if (!count) {
+                    count = { title, users: [] };
+                    map.set(title, count);
+                }
                 count.users.push(`${user.name} (${user.id})`);
             }
         }

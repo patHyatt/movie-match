@@ -48,11 +48,13 @@ export async function runScraper(): Promise<void> {
         const watchlist: string[] = [];
         $('button.ipc-rate-button')
             .each((_, el) => {
-                const title = $(el)!
-                    .attr('aria-label')!
-                    .substring(5);
-                watchlist.push(title);
-                console.log(title)
+                const element = $(el);
+                const ariaLabel = element.attr('aria-label');
+                if (ariaLabel && ariaLabel.length > 5) {
+                    const title = ariaLabel.substring(5);
+                    watchlist.push(title);
+                    console.log(title);
+                }
             });
 
         await userRepository.updateWatchlist(id, watchlist);
