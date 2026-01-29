@@ -33,8 +33,12 @@ export class UserRepository {
 
     async create(user: User): Promise<User> {
         const db = await this.getDb();
-        await db.update(({ users }) => users.push(user));
-        return user;
+        try {
+            await db.update(({ users }) => users.push(user));
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to create user ${user.id}: ${error}`);
+        }
     }
 
     async update(id: string, updatedUser: Partial<User>): Promise<User | null> {
@@ -45,9 +49,13 @@ export class UserRepository {
             return null;
         }
 
-        Object.assign(user, updatedUser);
-        await db.write();
-        return user;
+        try {
+            Object.assign(user, updatedUser);
+            await db.write();
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to update user ${id}: ${error}`);
+        }
     }
 
     async updateWatchlist(id: string, watchlist: string[]): Promise<User | null> {
@@ -62,13 +70,21 @@ export class UserRepository {
             return false;
         }
 
-        db.data.users.splice(index, 1);
-        await db.write();
-        return true;
+        try {
+            db.data.users.splice(index, 1);
+            await db.write();
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to delete user ${id}: ${error}`);
+        }
     }
 
     async save(): Promise<void> {
         const db = await this.getDb();
-        await db.write();
+        try {
+            await db.write();
+        } catch (error) {
+            throw new Error(`Failed to save database: ${error}`);
+        }
     }
 }

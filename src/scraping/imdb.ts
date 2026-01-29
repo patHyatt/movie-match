@@ -25,42 +25,93 @@ export async function runScraper(): Promise<void> {
     }
 
     // Launch the browser and open a new blank page
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299');
-
-    for (const id of ids) {
-        // Navigate the page to a URL.
-        await page.goto(`https://www.imdb.com/user/${id}/watchlist/`);
-        // Set screen size.
-        await page.setViewport({ width: 1080, height: 1024 });
-
-        const content = await page.content();
-        const $ = cheerio.load(content);
-
-        let current = await userRepository.findById(id);
-        if (!current) {
-            const name = $('a[data-testid="list-author-link"]').first().text() || '(Anonymous)';
-            current = await userRepository.create({ id: id, name: name, watchlist: [] });
-        }
-
-        console.log('id:', id);
-        const watchlist: string[] = [];
-        $('button.ipc-rate-button')
-            .each((_, el) => {
-                const title = $(el)!
-                    .attr('aria-label')!
-                    .substring(5);
-                watchlist.push(title);
-                console.log(title)
-            });
-
-        await userRepository.updateWatchlist(id, watchlist);
+    let browser;
+    try {
+        browser = await puppeteer.launch({ headless: true });
+    } catch (error) {
+        console.error('Error launching browser:', error);
+        console.error('Please ensure Chromium is installed correctly.');
+        throw error;
     }
 
-    await userRepository.save();
+    const page = await browser.newPage();
+    
+    try {
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299');
 
-    await browser.close();
+        for (const id of ids) {
+            try {
+                console.log('Scraping watchlist for user:', id);
+                
+                // Navigate the page to a URL with timeout
+                await page.goto(`https://www.imdb.com/user/${id}/watchlist/`, {
+                    waitUntil: 'networkidle2',
+                    timeout: 30000
+                });
+                
+                // Set screen size.
+                await page.setViewport({ width: 1080, height: 1024 });
+
+                const content = await page.content();
+                const $ = cheerio.load(content);
+
+                let current = await userRepository.findById(id);
+                if (!current) {
+                    const name = $('a[data-testid="list-author-link"]').first().text() || '(Anonymous)';
+                    current = await userRepository.create({ id: id, name: name, watchlist: [] });
+                }
+
+                const watchlist: string[] = [];
+                const buttons = $('button.ipc-rate-button');
+                
+                if (buttons.length === 0) {
+                    console.warn(`No movies found for user ${id}. The page structure may have changed or the watchlist is empty.`);
+                }
+                
+                buttons.each((_, el) => {
+                    try {
+                        const ariaLabel = $(el).attr('aria-label');
+                        if (ariaLabel && ariaLabel.startsWith('Rate ')) {
+                            const title = ariaLabel.substring(5);
+                            if (title && title.trim() !== '') {
+                                watchlist.push(title);
+                                console.log('  -', title);
+                            }
+                        }
+                    } catch (error) {
+                        console.warn(`Error extracting movie title:`, error);
+                    }
+                });
+
+                try {
+                    await userRepository.updateWatchlist(id, watchlist);
+                    console.log(`Successfully scraped ${watchlist.length} movies for user ${id}`);
+                } catch (error) {
+                    console.error(`Error updating watchlist for user ${id}:`, error);
+                    throw error;
+                }
+            } catch (error) {
+                console.error(`Error scraping user ${id}:`, error);
+                // Continue with next user instead of failing completely
+                continue;
+            }
+        }
+
+        try {
+            await userRepository.save();
+            console.log('Database saved successfully');
+        } catch (error) {
+            console.error('Error saving database:', error);
+            throw error;
+        }
+    } finally {
+        // Always attempt to close the browser
+        try {
+            await browser.close();
+        } catch (error) {
+            console.error('Error closing browser:', error);
+        }
+    }
 }
 
 // Allow running directly (check if this file is the entry point)
