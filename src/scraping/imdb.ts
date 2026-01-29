@@ -51,9 +51,11 @@ export async function runScraper(): Promise<void> {
                 const element = $(el);
                 const ariaLabel = element.attr('aria-label');
                 if (ariaLabel && ariaLabel.length > 5) {
-                    const title = ariaLabel.substring(5);
-                    watchlist.push(title);
-                    console.log(title);
+                    const title = ariaLabel.substring(5).trim();
+                    if (title) {
+                        watchlist.push(title);
+                        console.log(title);
+                    }
                 }
             });
 
